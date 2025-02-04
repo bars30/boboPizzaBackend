@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {client} = require('../../../db'); // Убедитесь, что у вас настроено соединение с базой данных
-
+const {client} = require('../../../db'); 
 // Обработчик для получения всех пицц с их вариациями и ингредиентами
 // router.get('/', async (req, res) => {
 //  console.log("🎿🎿🎿");

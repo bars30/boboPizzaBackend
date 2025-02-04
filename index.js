@@ -12,6 +12,7 @@ const popupRoutes = require('./routes/popup');
 const uploadRoutes = require('./routes/upload');
 
 const pizzaRoutes = require('./routes/products/pizzas');
+const drinkRoutes = require('./routes/products/drinks');
 
 const app = express();
 app.use(bodyParser.json());
@@ -33,6 +34,7 @@ app.use('/popup', popupRoutes);
 app.use('/upload', uploadRoutes);
 
 app.use('/products/pizzas', pizzaRoutes);
+app.use('/products/drinks', drinkRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
