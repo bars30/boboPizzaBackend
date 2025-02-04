@@ -14,6 +14,7 @@ const uploadRoutes = require('./routes/upload');
 const pizzaRoutes = require('./routes/products/pizzas');
 const drinkRoutes = require('./routes/products/drinks');
 const dessertsRoutes = require('./routes/products/desserts');
+const breakfastsRoutes = require('./routes/products/breakfasts');
 
 const app = express();
 app.use(bodyParser.json());
@@ -37,6 +38,7 @@ app.use('/upload', uploadRoutes);
 app.use('/products/pizzas', pizzaRoutes);
 app.use('/products/drinks', drinkRoutes);
 app.use('/products/desserts', dessertsRoutes);
+app.use('/products/breakfasts', breakfastsRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
