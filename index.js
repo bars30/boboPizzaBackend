@@ -17,6 +17,9 @@ const dessertsRoutes = require('./routes/products/desserts');
 const breakfastsRoutes = require('./routes/products/breakfasts');
 const snacksRoutes = require('./routes/products/snacks');
 
+const cartRoutes = require('./routes/card');
+
+
 const app = express();
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -41,6 +44,8 @@ app.use('/products/drinks', drinkRoutes);
 app.use('/products/desserts', dessertsRoutes);
 app.use('/products/breakfasts', breakfastsRoutes);
 app.use('/products/snacks', snacksRoutes);
+
+app.use('/cart', cartRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

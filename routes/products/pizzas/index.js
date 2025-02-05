@@ -91,6 +91,7 @@ router.get('/', async (req, res) => {
                  price: variation.price,
                  is_available: variation.is_available,
                  image_url: variation.image_url,
+                 id: variation.id
              })),
          };
      });
