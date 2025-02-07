@@ -24,10 +24,10 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cookieParser());
 
+
 const corsOptions = {
-    origin: ['http://localhost:3000', 'http://127.0.0.1:5500', 'http://localhost:4200'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true,
+    origin: 'http://localhost:4200', // Разрешить только с этого домена
+    credentials: true,  // Разрешить передачу куков
 };
 
 app.use(cors(corsOptions));
@@ -46,6 +46,9 @@ app.use('/products/breakfasts', breakfastsRoutes);
 app.use('/products/snacks', snacksRoutes);
 
 app.use('/cart', cartRoutes);
+app.use(express.json()); // Добавляет поддержку JSON
+app.use(express.urlencoded({ extended: true })); // Если используешь `x-www-form-urlencoded`
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

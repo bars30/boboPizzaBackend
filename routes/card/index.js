@@ -7,7 +7,10 @@ const router = express.Router();
 
 router.post('/add-to-cart', async (req, res) => {
  try {
-     const { item_id, ingredients, quantity, category, price } = req.body;
+    console.log('🔹 Body received:', req.body); // Проверка, что приходит от клиента
+    const { item_id, ingredients, quantity, category, price } = req.body;
+    //  const { item_id, ingredients, quantity, category, price } = req.body;
+     
      console.log('🍒 item_id -->', item_id);
      console.log('🍒 ingredients -->', ingredients);
      console.log('🍒 quantity -->', quantity);
