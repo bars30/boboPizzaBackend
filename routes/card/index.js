@@ -1,125 +1,120 @@
 const express = require('express');
 const { client } = require('../../db');
  const crypto = require('crypto');
+const { log } = require('console');
 const router = express.Router();
 
+// router.get('/', async (req, res) => {
+//     try {
+//         let token = req.cookies.cartToken;
+//         if (!token) {
+//             token = crypto.randomUUID();
+//             res.cookie('cartToken', token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
+//         }
 
+//         const selectQuery = `SELECT * FROM "cart" WHERE "token" = $1;`;
+//         const cartResult = await client.query(selectQuery, [token]);
+//         console.log(cartResult.rows[0].id);
 
-// router.post('/add-to-cart', async (req, res) => {
-//  try {
-//     console.log('🔹 Body received:', req.body); // Проверка, что приходит от клиента
-//     const { item_id, ingredients, quantity, category, price } = req.body;
-//     //  const { item_id, ingredients, quantity, category, price } = req.body;
-     
-//      console.log('🍒 item_id -->', item_id);
-//      console.log('🍒 ingredients -->', ingredients);
-//      console.log('🍒 quantity -->', quantity);
+//         if (cartResult.rowCount === 0) {
+//             return res.status(404).json({ error: 'Cart not found for this token.' });
+//         }
 
-//      // Получаем токен из куки
-//      let token = req.cookies.cartToken;
-//      console.log('Cart Token:', token);
+//         const cartId = cartResult.rows[0].id;
+//         const itemsQuery = `SELECT * FROM "cart_items" WHERE "cart_id" = $1;`;
+//         const itemsResult = await client.query(itemsQuery, [cartId]);
 
-//      // Если токена нет, генерируем новый
-//      if (!token) {
-//          console.log('No cart token provided');
-//          token = crypto.randomUUID(); // Генерация нового токена
-//          res.cookie('cartToken', token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 }); // Устанавливаем токен в куки на 30 дней
-//          console.log('Generated and set new token in cookies:', token);
-//      }
-
-//      // Получаем userId, если пользователь авторизован, иначе null
-//      const userId = req.user?.id || null;
-
-//      // Проверяем, существует ли корзина с текущим токеном
-//      const selectQuery = `
-//          SELECT * FROM "cart" WHERE "token" = $1;
-//      `;
-//      const values = [token];
-//      const result = await client.query(selectQuery, values);
-
-//      console.log('Query Result:', result.rows);
-
-//      let cartId;
-
-//      if (result.rowCount === 0) {
-//          // Если корзины с таким токеном нет, создаем новую
-//          const insertQuery = `
-//              INSERT INTO "cart" ("token", "userid", "createdat", "updatedat")
-//              VALUES ($1, $2, NOW(), NOW())
-//              RETURNING *;
-//          `;
-//          const insertValues = [token, userId];
-//          const insertResult = await client.query(insertQuery, insertValues);
-
-//          console.log('New cart Created:', insertResult.rows[0]);
-//          cartId = insertResult.rows[0].id;
-//      } else {
-//          // Если корзина существует, получаем её id
-//          cartId = result.rows[0].id;
-//      }
-
-//      // Проверяем, есть ли уже элемент в CartItem с таким cartId, item_id и ingredients
-//      let checkItemQuery;
-//      let checkItemValues;
-
-//      if (!ingredients || ingredients.length === 0) {
-//          checkItemQuery = `
-//              SELECT * FROM "cart_items" 
-//              WHERE "cart_id" = $1 
-//              AND "item_id" = $2;
-//          `;
-//          checkItemValues = [cartId, item_id];
-//      } else {
-//          checkItemQuery = `
-//              SELECT * FROM "cart_items" 
-//              WHERE "cart_id" = $1 
-//              AND "item_id" = $2 
-//              AND "ingredients" = $3;
-//          `;
-//          checkItemValues = [cartId, item_id, ingredients];
-//      }
-
-//      const itemResult = await client.query(checkItemQuery, checkItemValues);
-//      console.log('Item Query Result:', itemResult.rows);
-
-//      if (itemResult.rowCount > 0) {
-//          // Если такой элемент существует, обновляем quantity
-//          const itemId = itemResult.rows[0].id;
-//          const oldQuantity = itemResult.rows[0].quantity;
-//          const newQuantity = quantity !== 1 ? quantity : oldQuantity + 1; // Увеличиваем количество
-
-//          const updateQuery = `
-//              UPDATE "cart_items" 
-//              SET "quantity" = $1, "updated_at" = NOW() 
-//              WHERE "id" = $2
-//              RETURNING *;
-//          `;
-//          const updateValues = [newQuantity, itemId];
-//          const updateResult = await client.query(updateQuery, updateValues);
-
-//          console.log('Updated cart_items:', updateResult.rows[0]);
-//          return res.status(200).json(updateResult.rows[0]);
-//      } else {
-//          // Если такого элемента нет, добавляем новый
-//          const insertItemQuery = `
-//              INSERT INTO "cart_items" ("cart_id", "item_id", "ingredients", "quantity", "created_at", "updated_at", "category", "price")
-//              VALUES ($1, $2, $3, $4, NOW(), NOW(), $5, $6)
-//              RETURNING *;
-//          `;
-//          const insertItemValues = [cartId, item_id, ingredients, quantity, category, price];
-//          const insertItemResult = await client.query(insertItemQuery, insertItemValues);
-
-//          console.log('New CartItem Created:', insertItemResult.rows[0]);
-//          return res.status(201).json(insertItemResult.rows[0]);
-//      }
-//  } catch (error) {
-//      console.error('[CART_POST] Server error', error);
-//      return res.status(500).json({ message: 'Не удалось добавить элемент в корзину' });
-//  }
+//         res.status(200).json(itemsResult.rows);  // Возвращаем все товары в корзине
+//     } catch (error) {
+//         res.status(500).json({ error: 'Error fetching cart items.' });
+//     }
 // });
+
+router.get('/', async (req, res) => {
+    try {
+        let token = req.cookies.cartToken;
+        if (!token) {
+            token = crypto.randomUUID();
+            res.cookie('cartToken', token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
+        }
+
+        const selectQuery = `SELECT * FROM "cart" WHERE "token" = $1;`;
+        const cartResult = await client.query(selectQuery, [token]);
+
+        if (cartResult.rowCount === 0) {
+            return res.status(404).json({ error: 'Cart not found for this token.' });
+        }
+
+        const cartId = cartResult.rows[0].id;
+        const itemsQuery = `SELECT * FROM "cart_items" WHERE "cart_id" = $1;`;
+        const itemsResult = await client.query(itemsQuery, [cartId]);
+
+        const updatedItems = await Promise.all(itemsResult.rows.map(async (item) => {
+            let itemDetails = { ...item };
+        
+            if (item.category === 'drinks') {
+                const drinkVariationQuery = `SELECT * FROM "drinks_variations" WHERE "id" = $1;`;
+                const drinkVariationResult = await client.query(drinkVariationQuery, [item.item_id]);
+        
+                if (drinkVariationResult.rowCount > 0) {
+                    const drinkVariation = drinkVariationResult.rows[0];
+                    const drinkQuery = `SELECT * FROM "drinks" WHERE "id" = $1;`;
+                    const drinkResult = await client.query(drinkQuery, [drinkVariation.drink_id]);
+        
+                    if (drinkResult.rowCount > 0) {
+                        const drink = drinkResult.rows[0];
+                        itemDetails.drink = drink.name;
+                        itemDetails.volume_ml = drinkVariation.volume_ml;
+                        itemDetails.image_url = drinkVariation.image_url;
+                        itemDetails.price = drinkVariation.price;
+                    }
+                }
+            } else if (item.category === 'pizzas') {
+                const pizzaVariationQuery = `SELECT * FROM "pizza_variations" WHERE "id" = $1;`;
+                const pizzaVariationResult = await client.query(pizzaVariationQuery, [item.item_id]);
+        
+                if (pizzaVariationResult.rowCount > 0) {
+                    const pizzaVariation = pizzaVariationResult.rows[0];
+                    const pizzaQuery = `SELECT * FROM "pizzas" WHERE "id" = $1;`;
+                    const pizzaResult = await client.query(pizzaQuery, [pizzaVariation.pizza_id]);
+        
+                    if (pizzaResult.rowCount > 0) {
+                        const pizza = pizzaResult.rows[0];
+                        itemDetails.pizza_name = pizza.name;
+                        itemDetails.crust_type = pizzaVariation.crust_type;
+                        itemDetails.size_cm = pizzaVariation.size_cm;
+                        itemDetails.image_url = pizzaVariation.image_url;
+                        itemDetails.price = pizzaVariation.price;
+                    }
+                }
+            } else if (['desserts', 'snacks', 'breakfasts'].includes(item.category)) {
+                const tableName = item.category; // Название таблицы соответствует категории
+                const itemQuery = `SELECT * FROM "${tableName}" WHERE "id" = $1;`;
+                const itemResult = await client.query(itemQuery, [item.item_id]);
+        
+                if (itemResult.rowCount > 0) {
+                    const itemData = itemResult.rows[0];
+                    itemDetails.name = itemData.name;
+                    itemDetails.image_url = itemData.image_url;
+                    itemDetails.price = itemData.price;
+                }
+            }
+        
+            return itemDetails;
+        }));
+        
+
+        res.status(200).json(updatedItems);  // Возвращаем все товары с добавленными данными
+    } catch (error) {
+        console.error('[CART_GET] Server error', error);
+        return res.status(500).json({ error: 'Error fetching cart items.' });
+    }
+});
+
 
 router.post('/add-to-cart', async (req, res) => {
     try {
+        console.log('🛒 Received body:', req.body);
         console.log('🔹 Body received:', req.body);
         const { item_id, category, quantity, price, subtotal, ingredients } = req.body;
 
@@ -161,11 +156,15 @@ router.post('/add-to-cart', async (req, res) => {
             );
             return res.status(200).json(updateResult.rows[0]);
         } else {
+            console.log('🛒 SQL INSERT category:', category);
+
             const insertItemResult = await client.query(
                 `INSERT INTO "cart_items" ("cart_id", "item_id", "category", "quantity", "price", "subtotal", "ingredients", "created_at", "updated_at") 
                 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) RETURNING *;`,
                 [cartId, item_id, category, quantity, price, subtotal, ingredients || null]
             );
+            console.log('✅ Inserted item:', insertItemResult.rows[0]);
+
             return res.status(201).json(insertItemResult.rows[0]);
         }
     } catch (error) {
