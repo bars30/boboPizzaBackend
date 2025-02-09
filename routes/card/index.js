@@ -112,30 +112,100 @@ router.get('/', async (req, res) => {
 });
 
 
+// router.post('/add-to-cart', async (req, res) => {
+//     try {
+//         console.log('🛒 Received body:', req.body);
+//         console.log('🔹 Body received:', req.body);
+//         const { item_id, category, quantity, price, subtotal, ingredients } = req.body;
+
+//         console.log('🍒 item_id -->', item_id);
+//         console.log('🍒 category -->', category);
+//         console.log('🍒 quantity -->', quantity);
+
+//         let token = req.cookies.cartToken;
+//         if (!token) {
+//             token = crypto.randomUUID();
+//             res.cookie('cartToken', token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
+//         }
+
+//         const userId = req.user?.id || null;
+        
+//         const selectQuery = `SELECT * FROM "cart" WHERE "token" = $1;`;
+//         const cartResult = await client.query(selectQuery, [token]);
+
+//         let cartId = cartResult.rowCount === 0 ? 
+//             (await client.query(`INSERT INTO "cart" ("token", "userid", "createdat", "updatedat") VALUES ($1, $2, NOW(), NOW()) RETURNING *;`, [token, userId])).rows[0].id 
+//             : cartResult.rows[0].id;
+
+//         let checkItemQuery = `SELECT * FROM "cart_items" WHERE "cart_id" = $1 AND "item_id" = $2`;
+//         let checkItemValues = [cartId, item_id];
+
+//         if (['pizza', 'drinks'].includes(category) && ingredients) {
+//             checkItemQuery += ' AND "ingredients" = $3';
+//             checkItemValues.push(ingredients);
+//         }
+
+//         const itemResult = await client.query(checkItemQuery, checkItemValues);
+        
+//         if (itemResult.rowCount > 0) {
+//             const itemId = itemResult.rows[0].id;
+//             const newQuantity = quantity !== 1 ? quantity : itemResult.rows[0].quantity + 1;
+//             const updateResult = await client.query(
+//                 `UPDATE "cart_items" SET "quantity" = $1, "updated_at" = NOW() WHERE "id" = $2 RETURNING *;`,
+//                 [newQuantity, itemId]
+//             );
+//             return res.status(200).json(updateResult.rows[0]);
+//         } else {
+//             console.log('🛒 SQL INSERT category:', category);
+
+//             const insertItemResult = await client.query(
+//                 `INSERT INTO "cart_items" ("cart_id", "item_id", "category", "quantity", "price", "subtotal", "ingredients", "created_at", "updated_at") 
+//                 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) RETURNING *;`,
+//                 [cartId, item_id, category, quantity, price, subtotal, ingredients || null]
+//             );
+//             console.log('✅ Inserted item:', insertItemResult.rows[0]);
+
+//             return res.status(201).json(insertItemResult.rows[0]);
+//         }
+//     } catch (error) {
+//         console.error('[CART_POST] Server error', error);
+//         return res.status(500).json({ message: 'Не удалось добавить элемент в корзину' });
+//     }
+// });
+
 router.post('/add-to-cart', async (req, res) => {
     try {
         console.log('🛒 Received body:', req.body);
-        console.log('🔹 Body received:', req.body);
         const { item_id, category, quantity, price, subtotal, ingredients } = req.body;
 
-        console.log('🍒 item_id -->', item_id);
-        console.log('🍒 category -->', category);
-        console.log('🍒 quantity -->', quantity);
+        console.log(`🍒 Новый товар: item_id=${item_id}, category=${category}, quantity=${quantity}, price=${price}`);
 
         let token = req.cookies.cartToken;
         if (!token) {
             token = crypto.randomUUID();
             res.cookie('cartToken', token, { httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 });
+            console.log('🆕 Новый cartToken создан:', token);
+        } else {
+            console.log('🔑 Существующий cartToken:', token);
         }
 
         const userId = req.user?.id || null;
-        
+
+        console.log('🔍 Проверяем корзину по токену:', token);
         const selectQuery = `SELECT * FROM "cart" WHERE "token" = $1;`;
         const cartResult = await client.query(selectQuery, [token]);
 
-        let cartId = cartResult.rowCount === 0 ? 
-            (await client.query(`INSERT INTO "cart" ("token", "userid", "createdat", "updatedat") VALUES ($1, $2, NOW(), NOW()) RETURNING *;`, [token, userId])).rows[0].id 
-            : cartResult.rows[0].id;
+        let cartId;
+        if (cartResult.rowCount === 0) {
+            console.log('🆕 Создаем новую корзину');
+            const insertCartQuery = `INSERT INTO "cart" ("token", "userid", "createdat", "updatedat") VALUES ($1, $2, NOW(), NOW()) RETURNING *;`;
+            const insertCartResult = await client.query(insertCartQuery, [token, userId]);
+            cartId = insertCartResult.rows[0].id;
+            console.log('✅ Корзина создана с ID:', cartId);
+        } else {
+            cartId = cartResult.rows[0].id;
+            console.log('✅ Найдена существующая корзина с ID:', cartId);
+        }
 
         let checkItemQuery = `SELECT * FROM "cart_items" WHERE "cart_id" = $1 AND "item_id" = $2`;
         let checkItemValues = [cartId, item_id];
@@ -145,32 +215,38 @@ router.post('/add-to-cart', async (req, res) => {
             checkItemValues.push(ingredients);
         }
 
+        console.log('🔍 Проверяем товар в корзине:', { cartId, item_id, category, ingredients });
+        console.log('🔍 SQL:', checkItemQuery, checkItemValues);
         const itemResult = await client.query(checkItemQuery, checkItemValues);
-        
+
         if (itemResult.rowCount > 0) {
             const itemId = itemResult.rows[0].id;
             const newQuantity = quantity !== 1 ? quantity : itemResult.rows[0].quantity + 1;
+            console.log('🔄 Обновляем товар:', { itemId, newQuantity, category });
+
             const updateResult = await client.query(
-                `UPDATE "cart_items" SET "quantity" = $1, "updated_at" = NOW() WHERE "id" = $2 RETURNING *;`,
-                [newQuantity, itemId]
+                `UPDATE "cart_items" SET "quantity" = $1, "category" = $2, "updated_at" = NOW() WHERE "id" = $3 RETURNING *;`,
+                [newQuantity, category, itemId]
             );
+            console.log('✅ Товар обновлен:', updateResult.rows[0]);
             return res.status(200).json(updateResult.rows[0]);
         } else {
-            console.log('🛒 SQL INSERT category:', category);
+            console.log('➕ Добавляем новый товар в корзину:', { cartId, item_id, category, quantity, price, subtotal, ingredients });
 
             const insertItemResult = await client.query(
                 `INSERT INTO "cart_items" ("cart_id", "item_id", "category", "quantity", "price", "subtotal", "ingredients", "created_at", "updated_at") 
                 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) RETURNING *;`,
                 [cartId, item_id, category, quantity, price, subtotal, ingredients || null]
             );
-            console.log('✅ Inserted item:', insertItemResult.rows[0]);
 
+            console.log('✅ Товар успешно добавлен:', insertItemResult.rows[0]);
             return res.status(201).json(insertItemResult.rows[0]);
         }
     } catch (error) {
-        console.error('[CART_POST] Server error', error);
+        console.error('[CART_POST] ❌ Ошибка сервера:', error);
         return res.status(500).json({ message: 'Не удалось добавить элемент в корзину' });
     }
 });
+
 
 module.exports = router;
