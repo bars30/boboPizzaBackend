@@ -97,6 +97,7 @@ router.get('/', async (req, res) => {
                     itemDetails.name = itemData.name;
                     itemDetails.image_url = itemData.image_url;
                     itemDetails.price = itemData.price;
+                    itemDetails.pieces = itemData.pieces;
                 }
             }
         
