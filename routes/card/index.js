@@ -249,5 +249,40 @@ router.post('/add-to-cart', async (req, res) => {
     }
 });
 
+router.post('/delete-cart-item', async (req, res) => {
+    try {
+        const { id } = req.body;
+        console.log(req.body);
+        
+        const token = req.cookies.cartToken;
+        console.log('Cart Token:', token);
+   
+        if (!token) {
+            // return res.status(400).json({ message: 'No cart token provided' });
+    }
+
+    if (!id) {
+        return res.status(400).json({ message: 'Invalid input: id and quantity are required' });
+    }
+
+    const query = `
+        DELETE FROM "cart_items"
+        WHERE id = $1;  
+    `;
+
+    const values = [id];
+    
+    const result = await client.query(query, values); // Assuming `db.query` is your database query method
+    
+
+    console.log('Deleted CartItem:', result.rows[0]);
+    return res.status(200).json({ message: 'Item deleted successfully', cartItem: result.rows[0] });
+    }catch (error) {
+        console.error('[CART_GET] Server error', error);
+        return res.status(500).json({ message: 'Не удалось delete ' });
+    }
+})
+
+
 
 module.exports = router;
