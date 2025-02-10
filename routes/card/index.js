@@ -284,5 +284,45 @@ router.post('/delete-cart-item', async (req, res) => {
 })
 
 
+router.post('/change-quantity', async (req, res) => {
+    try {
+        const { id, quantity } = req.body;
+        console.log(req.body);
+        
+        const token = req.cookies.cartToken;
+        console.log('Cart Token:', token);
+   
+        if (!token) {
+            // return res.status(400).json({ message: 'No cart token provided' });
+    }
+
+    if (!id || !quantity) {
+        return res.status(400).json({ message: 'Invalid input: id and quantity are required' });
+    }
+
+    const query = `
+        UPDATE "cart_items"
+        SET "quantity" = $1, "updated_at" = NOW()
+        WHERE "id" = $2
+        RETURNING *;
+    `;
+
+    const values = [quantity, id];
+    
+    const result = await client.query(query, values); // Assuming `db.query` is your database query method
+    
+    
+    if (result.rowCount === 0) {
+        return res.status(404).json({ message: 'CartItem not found' });
+    }
+
+    console.log('Updated CartItem:', result.rows[0]);
+    return res.status(200).json({ message: 'Quantity updated successfully', cartItem: result.rows[0] });
+    }catch (error) {
+        console.error('[CART_GET] Server error', error);
+        return res.status(500).json({ message: 'Не удалось получить корзину' });
+    }
+})
+
 
 module.exports = router;
