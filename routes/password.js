@@ -10,9 +10,9 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
-    },
+    }, 
 });
-
+ 
 const verificationCodes = {}; // Move this inside if it's not global.
 
 router.post('/forgot-password', async (req, res) => {

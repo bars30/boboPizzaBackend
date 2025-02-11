@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 
 
-const authRoutes = require('./routes/auth');
+// const authRoutes = require('./routes/auth2');
 const userRoutes = require('./routes/user');
 const passwordRoutes = require('./routes/password');
 const popupRoutes = require('./routes/popup');
@@ -18,6 +18,7 @@ const breakfastsRoutes = require('./routes/products/breakfasts');
 const snacksRoutes = require('./routes/products/snacks');
 
 const cartRoutes = require('./routes/card');
+const loginRoutes = require('./routes/auth/login');
 
 
 const app = express();
@@ -33,7 +34,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 
-app.use('/auth', authRoutes);
+// app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/password', passwordRoutes);
 app.use('/popup', popupRoutes);
@@ -44,6 +45,8 @@ app.use('/products/drinks', drinkRoutes);
 app.use('/products/desserts', dessertsRoutes);
 app.use('/products/breakfasts', breakfastsRoutes);
 app.use('/products/snacks', snacksRoutes);
+
+app.use('/auth', loginRoutes);
 
 app.use('/cart', cartRoutes);
 app.use(express.json()); // Добавляет поддержку JSON
